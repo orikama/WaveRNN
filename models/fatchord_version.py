@@ -414,7 +414,35 @@ class WaveRNN(nn.Module):
     def load(self, path: Union[str, Path]):
         # Use device of model params as location for loaded state
         device = next(self.parameters()).device
-        self.load_state_dict(torch.load(path, map_location=device), strict=False)
+        #self.load_state_dict(torch.load(path, map_location=device), strict=False)
+
+        checkpoint = torch.load(path, map_location=device)
+        try:
+            self.load_state_dict(checkpoint)
+            # TODO: fix resetting restored optimizer lr 
+            # optimizer.load_state_dict(checkpoint["optimizer"])
+        except:
+            model_dict = self.state_dict()
+            # Partial initialization: if there is a mismatch with new and old layer, it is skipped.
+            # 1. filter out unnecessary keys
+            pretrained_dict = {
+                k: v for k, v in checkpoint.items() if k in model_dict
+            }
+            # 2. filter out different size layers
+            pretrained_dict = {
+                k: v
+                for k, v in pretrained_dict.items()
+                if v.numel() == model_dict[k].numel()
+            }
+            # 3. overwrite entries in the existing state dict
+            model_dict.update(pretrained_dict)
+            # 4. load the new state dict
+            self.load_state_dict(model_dict)
+            print(
+                " | > {} / {} layers are initialized".format(
+                    len(pretrained_dict), len(model_dict)
+                )
+            )
 
     def save(self, path: Union[str, Path]):
         # No optimizer argument because saving a model should not include data
