@@ -70,9 +70,21 @@ def spectrogram(y):
 
 
 def melspectrogram(y):
-    D = stft(y)
-    S = amp_to_db(linear_to_mel(np.abs(D)))
-    return normalize(S)
+    # D = stft(y)
+    # S = amp_to_db(linear_to_mel(np.abs(D)))
+    # return normalize(S)
+    x_stft = librosa.stft(
+        y,
+        n_fft=hp.n_fft,
+        hop_length=hp.hop_length,
+        win_length=hp.win_length,
+        window="hann",
+        pad_mode="reflect",
+    )
+    spc = np.abs(x_stft).T  # (#frames, #bins)
+    mel_basis = librosa.filters.mel(hp.sample_rate, hp.n_fft, hp.num_mels, hp.fmin, hp.fmax)
+
+    return np.log10(np.maximum(1e-10, np.dot(spc, mel_basis.T))).T #, x_stft
 
 
 def stft(y):
