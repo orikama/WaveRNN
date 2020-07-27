@@ -44,11 +44,11 @@ def save_checkpoint(checkpoint_type: str, paths: Paths, model, optimizer, *,
         s = 'named' if is_named else 'latest'
         num_exist = sum(p.exists() for p in path_dict.values())
 
-        if num_exist not in (0,2):
-            # Checkpoint broken
-            raise FileNotFoundError(
-                f'We expected either both or no files in the {s} checkpoint to '
-                'exist, but instead we got exactly one!')
+        # if num_exist not in (0,2):
+        #     # Checkpoint broken
+        #     raise FileNotFoundError(
+        #         f'We expected either both or no files in the {s} checkpoint to '
+        #         'exist, but instead we got exactly one!')
 
         if num_exist == 0:
             if not is_silent: print(f'Creating {s} checkpoint...')
@@ -122,6 +122,11 @@ def restore_checkpoint(checkpoint_type: str, paths: Paths, model, optimizer, *,
         model.load(path_dict['w'])
         print(f'Loading {s} optimizer state: {path_dict["o"]}')
         optimizer.load_state_dict(torch.load(path_dict['o']))
+    elif num_exist == 1:
+        # Checkpoint without optimizer
+        print('Restore from Checkpoint withot optimizer')
+        print(f'Loading {s} weights: {path_dict["w"]}')
+        model.load(path_dict['w'])
     elif create_if_missing:
         save_checkpoint(checkpoint_type, paths, model, optimizer, name=name, is_silent=False)
     else:
